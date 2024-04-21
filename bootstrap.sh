@@ -11,16 +11,27 @@ install_dependencies_macos() {
 }
 
 install_dependencies_linux() {
-  if ! sudo pacman -S git python3; then
-    echo 'Failed to install git + python3 packages' >&2
-    exit 1
+  if ! command -v git &>/dev/null; then
+    echo 'git is not installed. Attempting to install git...'
+    if ! sudo pacman -S --noconfirm git; then
+      echo 'Failed to install git' >&2
+      exit 1
+    fi
+  fi
+
+  if ! command -v python3 &>/dev/null; then
+    echo 'python3 is not installed. Attempting to install python3...'
+    if ! sudo pacman -S --noconfirm python3; then
+      echo 'Failed to install python3' >&2
+      exit 1
+    fi
   fi
 }
 
 download_playbooks_and_run() {
   local target_dir="$HOME/ENV_SETUP"
   mkdir -p "$target_dir"
-  pushd "$target_dir" || exit 255
+  pushd "$target_dir" > /dev/null 2>&1 || exit 255
 
   if ! curl -O https://raw.githubusercontent.com/kcierzan/dev-env/main/dev-machine.yml ||
      ! curl -O https://raw.githubusercontent.com/kcierzan/dev-env/main/requirements.yml; then
@@ -34,7 +45,7 @@ download_playbooks_and_run() {
     exit 1
   fi
 
-  popd || exit 255
+  popd > /dev/null 2>&1 || exit 255
   rm -rf "$target_dir"
 }
 

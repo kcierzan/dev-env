@@ -2,6 +2,7 @@
 - hosts: localhost
   vars:
     dotfiles_dir: "{{ ansible_env.HOME }}/.dotfiles"
+    src_dir: "{{ ansible_env.HOME }}/src"
     macos_dotfiles:
       - aerospace
     linux_dotfiles:
@@ -19,6 +20,152 @@
       - nvim
       - starship
       - zellij
+    homebrew_casks:
+      - 1password
+      - aerospace
+      - alacritty
+      - betterdisplay
+      - chromedriver
+      - docker
+      - figma
+      - httpie
+      - hyperkey
+      - jetbrains-toolbox
+      - obsidian
+      - raycast
+      - scroll-reverser
+      - zed
+    homebrew_packages:
+      - bat
+      - bottom
+      - boxes
+      - coreutils
+      - direnv
+      - felixkratz/formulae/borders
+      - figlet
+      - findutils
+      - fish
+      - fortune
+      - fzf
+      - gawk
+      - gcc
+      - gh
+      - git-delta
+      - gnu-sed
+      - gnu-tar
+      - gnu-which
+      - go
+      - grep
+      - gzip
+      - htop
+      - jq
+      - lazygit
+      - lsd
+      - luarocks
+      - magic-wormhole
+      - make
+      - mise
+      - mosh
+      - neovim
+      - openssh
+      - pnpm
+      - postgresql@15
+      - prettier
+      - rbenv
+      - ripgrep
+      - rust
+      - shellcheck
+      - starship
+      - stow
+      - supabase/tap/supabase
+      - wget
+      - xplr
+      - zellij
+      - zoxid
+    arch_packages:
+      - 1password
+      - alacritty
+      - amd-ucode # TODO: check that the processor is AMD before installing
+      - base
+      - base-devel
+      - bat
+      - bind
+      - blueman
+      - bluez
+      - bluez-utils
+      - bottom
+      - brightnessctl
+      - copyq
+      - ddcci-driver-linux-dkms
+      - direnv
+      - docker
+      - docker-compose
+      - dosfstools
+      - efibootmgr
+      - fd
+      - firefox-developer-edition
+      - fish
+      - font-manager
+      - fzf
+      - gammastep-git
+      - git
+      - gnome-keyring
+      - google-chrome
+      - grub
+      - htop
+      - hyprcursor-git
+      - hyprland-git
+      - hyprlang-git
+      - hyprwayland-scanner-git
+      - inotify-tools
+      - jellyfin-ffmpeg5-bin
+      - jq
+      - lazygit
+      - libgnome-keyring
+      - libva-mesa-driver
+      - libva-utils
+      - linux
+      - linux-firmware
+      - linux-headers
+      - lsd
+      - lvm2
+      - magic-wormhole
+      - mako
+      - mise-bin
+      - mpv
+      - neofetch
+      - neovim-git
+      - networkmanager
+      - os-prober
+      - paru
+      - pipewire-pulse
+      - plocate
+      - pnpm
+      - postgresql
+      - qt5-wayland
+      - qt6-wayland
+      - reflector
+      - ripgrep
+      - snapd
+      - spdlog-git
+      - starship
+      - stow
+      - supabase-git
+      - swayidle
+      - swww-git
+      - sxiv-git
+      - ttf-joypixels
+      - unzip
+      - vulkan-radeon # TODO: check if the GPU is AMD before installing
+      - waybar-git
+      - wev-git
+      - wget
+      - wl-clipboard
+      - wlr-randr-git
+      - wofi
+      - zellij
+      - zoxide
+
   tasks:
     - name: Running tasks for macOS
       when: ansible_os_family == "Darwin"
@@ -55,72 +202,11 @@
           community.general.homebrew_cask:
             name: "{{ item }}"
           ignore_errors: yes
-          with_items:
-            - 1password
-            - aerospace
-            - alacritty
-            - betterdisplay
-            - chromedriver
-            - docker
-            - figma
-            - httpie
-            - hyperkey
-            - jetbrains-toolbox
-            - obsidian
-            - raycast
-            - scroll-reverser
-            - zed
+          with_items: "{{ homebrew_casks }}"
 
         - name: Install homebrew packages
           community.general.homebrew:
-            name: [
-              'bat',
-              'bottom',
-              'boxes',
-              'coreutils',
-              'direnv',
-              'felixkratz/formulae/borders',
-              'figlet',
-              'findutils',
-              'fish',
-              'fortune',
-              'fzf',
-              'gawk',
-              'gcc',
-              'gh',
-              'git-delta',
-              'gnu-sed',
-              'gnu-tar',
-              'gnu-which',
-              'go',
-              'grep',
-              'gzip',
-              'htop',
-              'jq',
-              'lazygit',
-              'lsd',
-              'luarocks',
-              'magic-wormhole',
-              'make',
-              'mise',
-              'mosh',
-              'neovim',
-              'openssh',
-              'pnpm',
-              'postgresql@15',
-              'prettier',
-              'rbenv',
-              'ripgrep',
-              'rust',
-              'shellcheck',
-              'starship',
-              'stow',
-              'supabase/tap/supabase',
-              'wget',
-              'xplr',
-              'zellij',
-              'zoxide'
-            ]
+            name: "{{ homebrew_packages }}"
 
         - name: Installing httpie CLI
           community.general.homebrew:
@@ -129,11 +215,62 @@
           failed_when: "result.msg is defined and 'Treating httpie as a formula' not in result.msg"
           register: result
 
+    - name: Running tasks for Arch Linux
+      when: ansible_facts['distribution'] == 'Archlinux'
+      block:
+        - name: Install base-devel and git
+          pacman:
+            name:
+              - base-devel
+              - git
+            state: present
+
+        - name: Check if paru is already installed
+          shell: command -v paru
+          register: paru_installed
+          ignore_errors: yes
+
+        - name: Clone paru
+          git:
+            repo: 'https://aur.archlinux.org/paru.git'
+            dest: "{{ src_dir }}/paru"
+            update: yes
+            version: master
+          when: paru_installed.rc != 0
+
+        - name: Build and install paru
+          shell: makepkg -si --noconfirm
+          args:
+            chdir: "{{ src_dir }}/paru"
+          when: paru_installed.rc != 0
+
+        - name: Check installed packages
+          command: paru -Q
+          register: installed_packages
+
+        - name: Set fact for packages to install
+          set_fact:
+            packages_to_install: "{{ arch_packages | difference(installed_packages.stdout_lines | map('regex_replace', '^([^ ]+).*$', '\\1') | list) }}"
+
+        - name: Install packages with paru
+          command: paru -S --noconfirm {{ packages_to_install | join(' ') }}
+          when: packages_to_install | length > 0
+
     # Start generic tasks
     - name: Get fish path
       become: false
       local_action: command which fish
       register: fish_path
+
+    - name: Get the user's login shell
+      getent:
+        database: passwd
+        key: "{{ ansible_user_id }}"
+
+    - name: Check if the user's shell is fish
+      set_fact:
+        fish_is_login_shell: "{{ getent_passwd[ansible_user_id][5] == fish_path }}"
+      when: getent_passwd[ansible_user_id] is defined
 
     - name: Add fish to shells
       lineinfile:
@@ -143,6 +280,7 @@
 
     - name: Set the login shell to fish
       shell: "chsh -s $(which fish) {{ ansible_env.USER }}"
+      when: not fish_is_login_shell
       become: true
 
     - name: Set fish global variables
@@ -172,7 +310,7 @@
 
     - name: Stow dotfiles
       shell: "stow {{ item }} --target {{ ansible_env.HOME }} --verbose=2"
-      args: 
+      args:
         chdir: "{{ dotfiles_dir }}"
       with_items: "{{ dots_to_stow }}"
       register: result
