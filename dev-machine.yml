@@ -1,0 +1,183 @@
+---
+- hosts: localhost
+  vars:
+    dotfiles_dir: "{{ ansible_env.HOME }}/.dotfiles"
+    macos_dotfiles:
+      - aerospace
+    linux_dotfiles:
+      - hyprland
+      - waybar
+      - wireplumber
+    common_dotfiles:
+      - alacritty
+      - bin
+      - borders
+      - fish
+      - git
+      - jetbrains
+      - lsd
+      - nvim
+      - starship
+      - zellij
+  tasks:
+    - name: Running tasks for macOS
+      when: ansible_os_family == "Darwin"
+      block:
+        - name: Updating macOS
+          shell: "softwareupdate --install --all"
+
+        - name: Install homebrew
+          include_role:
+            name: geerlingguy.mac.homebrew
+
+        - name: Make sure homebrew is in path
+          ansible.builtin.lineinfile:
+            path: /etc/paths
+            state: present
+            line: '/opt/homebrew/bin'
+          become: true
+          become_user: root
+
+        - name: Add custom homebrew repos
+          community.general.homebrew_tap:
+            name: [
+              felixkratz/formulae,
+              heroku/brew,
+              homebrew/bundle,
+              homebrew/cask-fonts,
+              homebrew/cask-versions,
+              homebrew/services,
+              nikitabobko/tap,
+              supabase/tap,
+            ]
+
+        - name: Install homebrew casks
+          community.general.homebrew_cask:
+            name: "{{ item }}"
+          ignore_errors: yes
+          with_items:
+            - 1password
+            - aerospace
+            - alacritty
+            - betterdisplay
+            - chromedriver
+            - docker
+            - figma
+            - httpie
+            - hyperkey
+            - jetbrains-toolbox
+            - obsidian
+            - raycast
+            - scroll-reverser
+            - zed
+
+        - name: Install homebrew packages
+          community.general.homebrew:
+            name: [
+              'bat',
+              'bottom',
+              'boxes',
+              'coreutils',
+              'direnv',
+              'felixkratz/formulae/borders',
+              'figlet',
+              'findutils',
+              'fish',
+              'fortune',
+              'fzf',
+              'gawk',
+              'gcc',
+              'gh',
+              'git-delta',
+              'gnu-sed',
+              'gnu-tar',
+              'gnu-which',
+              'go',
+              'grep',
+              'gzip',
+              'htop',
+              'jq',
+              'lazygit',
+              'lsd',
+              'luarocks',
+              'magic-wormhole',
+              'make',
+              'mise',
+              'mosh',
+              'neovim',
+              'openssh',
+              'pnpm',
+              'postgresql@15',
+              'prettier',
+              'rbenv',
+              'ripgrep',
+              'rust',
+              'shellcheck',
+              'starship',
+              'stow',
+              'supabase/tap/supabase',
+              'wget',
+              'xplr',
+              'zellij',
+              'zoxide'
+            ]
+
+        - name: Installing httpie CLI
+          community.general.homebrew:
+            name: httpie
+            state: present
+          failed_when: "result.msg is defined and 'Treating httpie as a formula' not in result.msg"
+          register: result
+
+    # Start generic tasks
+    - name: Get fish path
+      become: false
+      local_action: command which fish
+      register: fish_path
+
+    - name: Add fish to shells
+      lineinfile:
+        path: /etc/shells
+        line: "{{ fish_path.stdout }}"
+      become: true
+
+    - name: Set the login shell to fish
+      shell: "chsh -s $(which fish) {{ ansible_env.USER }}"
+      become: true
+
+    - name: Set fish global variables
+      shell:
+        cmd: "fish -c 'set -Ux {{ item.name }} {{ item.value }}'"
+      loop:
+        - { name: 'BAT_THEME', value: 'base16' }
+        - { name: 'EDITOR', value: "'nvim'" }
+        - { name: 'VISUAL', value: "'nvim'" }
+        - { name: 'STARSHIP_CONFIG', value: '"$HOME/.config/starship/starship.toml"' }
+        - { name: 'LANG', value: 'en_US.UTF-8' }
+        - { name: 'FZF_PREVIEW_COMMAND', value: 'bat --style=numbers --color=always {}' }
+        - { name: 'FZF_COMPLETION_TRIGGER', value: "'**'" }
+        - { name: 'FZF_DEFAULT_OPTS', value: "'--color=fg:-1,bg:-1,fg+:4,bg+:-1,header:3,hl:-1,hl+:3,prompt:4,spinner:5,pointer:5,marker:4,info:4'" }
+
+    - name: Clone dotfiles repo
+      git:
+        repo: 'https://github.com/kcierzan/dotfiles'
+        dest: "{{ dotfiles_dir }}"
+        clone: yes
+        update: yes
+        version: master
+
+    - name: Determine the list of dotfiles to stow
+      set_fact:
+        dots_to_stow: "{{ (macos_dotfiles if ansible_os_family == 'Darwin' else linux_dotfiles) + common_dotfiles }}"
+
+    - name: Stow dotfiles
+      shell: "stow {{ item }} --target {{ ansible_env.HOME }} --verbose=2"
+      args: 
+        chdir: "{{ dotfiles_dir }}"
+      with_items: "{{ dots_to_stow }}"
+      register: result
+      changed_when: 'result.stderr is search("LINK: ")'
+
+    - name: Sync neovim plugins
+      shell: "nvim --headless 'Lazy! sync' +qa"
+
