@@ -13,8 +13,6 @@
   vars:
     dotfiles_dir: "{{ ansible_env.HOME }}/.dotfiles"
     src_dir: "{{ ansible_env.HOME }}/src"
-    new_user: ""
-    new_password: ""
     macos_dotfiles:
       - aerospace
     linux_dotfiles:
@@ -32,6 +30,15 @@
       - nvim
       - starship
       - zellij
+    homebrew_taps:
+      - felixkratz/formulae
+      - heroku/brew
+      - homebrew/bundle
+      - homebrew/cask-fonts
+      - homebrew/cask-versions
+      - homebrew/services
+      - nikitabobko/tap
+      - supabase/tap
     homebrew_casks:
       - 1password
       - aerospace
@@ -219,16 +226,7 @@
 
         - name: Add custom homebrew repos
           community.general.homebrew_tap:
-            name: [
-              felixkratz/formulae,
-              heroku/brew,
-              homebrew/bundle,
-              homebrew/cask-fonts,
-              homebrew/cask-versions,
-              homebrew/services,
-              nikitabobko/tap,
-              supabase/tap,
-            ]
+            name: "{{ homebrew_taps }}"
 
         - name: Install homebrew casks
           community.general.homebrew_cask:
@@ -247,12 +245,14 @@
           failed_when: "result.msg is defined and 'Treating httpie as a formula' not in result.msg"
           register: result
 
+    # Begin Arch tasks
     - name: Running tasks for Arch Linux
       when: ansible_facts['distribution'] == 'Archlinux'
       block:
         - name: Install base-devel and git
           pacman:
             name:
+              - base
               - base-devel
               - git
             state: present
