@@ -35,6 +35,7 @@ download_playbooks_and_run() {
   fi
 
   popd || exit 255
+  rm -rf "$target_dir"
 }
 
 case "$(uname)" in
