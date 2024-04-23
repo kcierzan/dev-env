@@ -8,21 +8,33 @@ install_dependencies_macos() {
     echo "Failed to accept Xcode license" >&2
     exit 1
   fi
+
+  if ! command -v brew &>/dev/null; then
+    echo 'Homebrew is not installed. Attempting to install homebrew...'
+    eval "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+
+  if ! command -v python &>/dev/null; then
+    echo 'python is not installed. Attempting to install python...'
+    if ! brew install python; then
+      echo "Failed to install python"
+    fi
+  fi
 }
 
 install_dependencies_linux() {
   if ! command -v git &>/dev/null; then
-    echo 'git is not installed. Attempting to install git...'
+    echo 'Git is not installed. Attempting to install git...'
     if ! sudo pacman -S --noconfirm git; then
       echo 'Failed to install git' >&2
       exit 1
     fi
   fi
 
-  if ! command -v python3 &>/dev/null; then
-    echo 'python3 is not installed. Attempting to install python3...'
-    if ! sudo pacman -S --noconfirm python3; then
-      echo 'Failed to install python3' >&2
+  if ! command -v python &>/dev/null; then
+    echo 'Python is not installed. Attempting to install python...'
+    if ! sudo pacman -S --noconfirm python; then
+      echo 'Failed to install python' >&2
       exit 1
     fi
   fi
@@ -65,19 +77,11 @@ case "$(uname)" in
     ;;
 esac
 
-if ! curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py; then
-  echo 'Failed to download get-pip.py' >&2
-  exit 1
+if ! ansible --version &>/dev/null; then
+  echo 'Ansible is not installed. Attempting to install Ansible...'
+  if ! pip install --ignore-installed --user ansible; then
+    echo 'Failed to install ansible'
+  fi
 fi
 
-if ! python3 get-pip.py; then
-  echo 'Failed to install pip' >&2
-  exit 1
-fi
-
-if ! pip3 install --ignore-installed --user ansible; then
-  echo 'Failed to install ansible'
-fi
-
-rm get-pip.py
 download_playbooks_and_run
