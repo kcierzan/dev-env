@@ -29,24 +29,31 @@ install_dependencies_linux() {
 }
 
 download_playbooks_and_run() {
-  local target_dir="$HOME/ENV_SETUP"
+  local repo_url="https://github.com/kcierzan/dev-env.git"
+  local target_dir="$HOME/src/dev-env"
+
   mkdir -p "$target_dir"
+
   pushd "$target_dir" > /dev/null 2>&1 || exit 255
 
-  if ! curl -O https://raw.githubusercontent.com/kcierzan/dev-env/main/dev-machine.yml ||
-     ! curl -O https://raw.githubusercontent.com/kcierzan/dev-env/main/requirements.yml; then
-    echo 'Failed to download playbook files' >&2
-    exit 1
+  if [ ! -d ".git" ]; then
+    if ! git clone "$repo_url" . ; then
+      echo 'Failed to clone the repository' >&2
+      popd > /dev/null 2>&1
+      exit 1
+    fi
+  else
+    echo "Repository already exists, skipping clone..."
   fi
 
   if ! ansible-galaxy install -r requirements.yml ||
      ! ansible-playbook -i 'localhost' -c local dev-machine.yml --ask-become-pass; then
     echo 'Ansible setup failed' >&2
+    popd > /dev/null 2>&1
     exit 1
   fi
 
-  popd > /dev/null 2>&1 || exit 255
-  rm -rf "$target_dir"
+  popd > /dev/null 2>&1
 }
 
 case "$(uname)" in
