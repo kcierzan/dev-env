@@ -1,0 +1,45 @@
+---
+- name: Set fish global variables
+  shell:
+    cmd: "fish -c 'set -Ux {{ item.name }} {{ item.value }}'"
+  loop:
+    - { name: 'BAT_THEME', value: 'base16' }
+    - { name: 'EDITOR', value: "'nvim'" }
+    - { name: 'VISUAL', value: "'nvim'" }
+    - { name: 'STARSHIP_CONFIG', value: '"$HOME/.config/starship/starship.toml"' }
+    - { name: 'LANG', value: 'en_US.UTF-8' }
+    - { name: 'FZF_PREVIEW_COMMAND', value: 'bat --style=numbers --color=always {}' }
+    - { name: 'FZF_COMPLETION_TRIGGER', value: "'**'" }
+    - { name: 'FZF_DEFAULT_OPTS', value: "'--color=fg:-1,bg:-1,fg+:4,bg+:-1,header:3,hl:-1,hl+:3,prompt:4,spinner:5,pointer:5,marker:4,info:4'" }
+
+- name: Clone dotfiles repo
+  git:
+    repo: 'https://github.com/kcierzan/dotfiles'
+    dest: "{{ dotfiles_dir }}"
+    clone: yes
+    update: yes
+    version: master
+
+- name: Determine the list of dotfiles to stow
+  set_fact:
+    dots_to_stow: "{{ (macos_dotfiles if ansible_os_family == 'Darwin' else linux_dotfiles) + common_dotfiles }}"
+  changed_when: False
+
+- name: Stow dotfiles
+  shell: "stow {{ item }} --target {{ ansible_env.HOME }} --verbose=2"
+  args:
+    chdir: "{{ dotfiles_dir }}"
+  with_items: "{{ dots_to_stow }}"
+  register: result
+  changed_when: 'result.stderr is search("LINK: ")'
+
+- name: Installing mise runtimes
+  shell: "mise install {{ item }}"
+  loop: "{{ mise_runtimes }}"
+
+- name: Setting global mise runtime versions
+  shell: "mise use -g {{ item }}"
+  loop: "{{ mise_runtimes }}"
+
+- name: Sync neovim plugins
+  shell: "nvim --headless 'Lazy! sync' +qa"

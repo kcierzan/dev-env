@@ -1,0 +1,66 @@
+---
+- name: Updating macOS
+  shell: "softwareupdate --install --all"
+
+- name: Install homebrew
+  include_role:
+    name: geerlingguy.mac.homebrew
+
+- name: Make sure homebrew is in path
+  ansible.builtin.lineinfile:
+    path: /etc/paths
+    state: present
+    line: '/opt/homebrew/bin'
+  become: true
+  become_user: root
+
+- name: Add custom homebrew repos
+  community.general.homebrew_tap:
+    name: "{{ homebrew_taps }}"
+
+- name: Install homebrew casks
+  community.general.homebrew_cask:
+    name: "{{ item }}"
+  ignore_errors: yes
+  with_items: "{{ homebrew_casks }}"
+
+- name: Install homebrew packages
+  community.general.homebrew:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ homebrew_packages }}"
+
+- name: Installing httpie CLI
+  community.general.homebrew:
+    name: httpie
+    state: present
+  failed_when: "result.msg is defined and 'Treating httpie as a formula' not in result.msg"
+  register: result
+
+- name: Get fish path
+  become: false
+  local_action: command which fish
+  register: fish_path
+  changed_when: False
+
+- name: Get the user's login shell
+  shell: "dscl . -read /Users/{{ ansible_user_id }} UserShell | awk '{print $2}'"
+  register: login_shell
+  changed_when: False
+
+- name: Check if the user's shell is fish
+  set_fact:
+    fish_is_login_shell: "{{ login_shell.stdout == fish_path }}"
+  when: login_shell.stdout is defined and fish_path is defined
+
+- name: Add fish to shells
+  lineinfile:
+    path: /etc/shells
+    line: "{{ fish_path.stdout }}"
+  become: true
+
+- name: Set the login shell to fish
+  shell: "chsh -s $(which fish) {{ ansible_env.USER }}"
+  when: not fish_is_login_shell
+  become: true
+

@@ -1,0 +1,100 @@
+---
+- name: Install base-devel and git
+  pacman:
+    name:
+      - base
+      - base-devel
+      - git
+    state: present
+
+- name: Check if paru is already installed
+  shell: command -v paru
+  register: paru_installed
+  ignore_errors: yes
+
+- name: Clone paru
+  git:
+    repo: 'https://aur.archlinux.org/paru.git'
+    dest: "{{ src_dir }}/paru"
+    update: yes
+    version: master
+  when: paru_installed.rc != 0
+
+- name: Build and install paru
+  shell: makepkg -si --noconfirm
+  args:
+    chdir: "{{ src_dir }}/paru"
+  when: paru_installed.rc != 0
+
+- name: Check installed packages
+  command: paru -Q
+  register: installed_packages
+
+- name: Set fact for packages to install
+  set_fact:
+    packages_to_install: "{{ arch_packages | difference(installed_packages.stdout_lines | map('regex_replace', '^([^ ]+).*$', '\\1') | list) }}"
+
+- name: Install packages with paru
+  command: paru -S --noconfirm {{ packages_to_install | join(' ') }}
+  when: packages_to_install | length > 0
+
+- name: Set up NetworkManager WiFi
+  when: wifi_ssid != "" and wifi_password != ""
+  template:
+    src: templates/network_manager_wifi_connection.j2
+    dest: "/etc/NetworkManager/system-connections/{{ wifi_ssid | replace(' ', '_') }}.nmconnection"
+    owner: root
+    group: root
+    mode: '0600'
+  notify:
+    - reload network manager
+
+- name: Ensure root systemd services are running
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop: "{{ root_systemd_services }}"
+  become: yes
+
+- name: Ensure user systemd services are running
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+    scope: user
+  loop: "{{ user_systemd_services }}"
+
+- name: Install webstorm
+  community.general.snap:
+    name: webstorm
+    classic: yes
+    channel: latest/stable
+
+- name: Get fish path
+  become: false
+  local_action: command which fish
+  register: fish_path
+  changed_when: False
+
+- name: Get the user's login shell
+  getent:
+    database: passwd
+    key: "{{ ansible_user_id }}"
+  changed_when: False
+
+- name: Check if the user's shell is fish
+  set_fact:
+    fish_is_login_shell: "{{ getent_passwd[ansible_user_id][5] == fish_path }}"
+  when: getent_passwd[ansible_user_id] is defined
+
+- name: Add fish to shells
+  lineinfile:
+    path: /etc/shells
+    line: "{{ fish_path.stdout }}"
+  become: true
+
+- name: Set the login shell to fish
+  shell: "chsh -s $(which fish) {{ ansible_env.USER }}"
+  when: not fish_is_login_shell
+  become: true

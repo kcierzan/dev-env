@@ -1,0 +1,27 @@
+---
+dotfiles_dir: "{{ ansible_env.HOME }}/.dotfiles"
+src_dir: "{{ ansible_env.HOME }}/src"
+macos_dotfiles:
+  - aerospace
+linux_dotfiles:
+  - hyprland
+  - waybar
+  - wireplumber
+common_dotfiles:
+  - alacritty
+  - bin
+  - borders
+  - fish
+  - git
+  - jetbrains
+  - lsd
+  - nvim
+  - starship
+  - zellij
+mise_runtimes:
+  - python@3.12.2
+  - ruby@3.2.3
+  - node@20.4.0
+  - erlang@26.0.2
+  - elixir@1.15.2-otp-26
+  - bun@1.1.4
