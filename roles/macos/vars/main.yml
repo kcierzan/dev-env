@@ -20,6 +20,7 @@ homebrew_casks:
   - hyperkey
   - jetbrains-toolbox
   - obsidian
+  - orion
   - raycast
   - scroll-reverser
   - zed
@@ -39,6 +40,7 @@ homebrew_packages:
   - gcc
   - gh
   - git-delta
+  - git-lfs
   - gnu-sed
   - gnu-tar
   - gnu-which

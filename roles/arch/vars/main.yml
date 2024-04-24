@@ -26,6 +26,7 @@ arch_packages:
   - fzf
   - gammastep-git
   - git
+  - git-lfs
   - gnome-keyring
   - google-chrome
   - grub
