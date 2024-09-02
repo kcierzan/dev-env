@@ -3,8 +3,11 @@ arch_packages:
   - 1password
   - alacritty
   - amd-ucode # TODO: check that the processor is AMD before installing
+  - aquamarine-git
+  - archlinux-keyring
   - base
   - base-devel
+  - bash
   - bat
   - bind
   - blueman
@@ -13,18 +16,18 @@ arch_packages:
   - bottom
   - brightnessctl
   - copyq
-  - ddcci-driver-linux-dkms
+  - ddcci-driver-linux-dkms-git
   - direnv
   - docker
   - docker-compose
   - dosfstools
+  - dust
   - efibootmgr
+  - fastfetch
   - fd
   - firefox-developer-edition
-  - fish
   - font-manager
   - fzf
-  - gammastep-git
   - git
   - git-lfs
   - gnome-keyring
@@ -51,8 +54,7 @@ arch_packages:
   - mako
   - mise-bin
   - mpv
-  - neofetch
-  - neovim-git
+  - neovim
   - networkmanager
   - os-prober
   - paru
@@ -60,39 +62,45 @@ arch_packages:
   - plocate
   - pnpm
   - postgresql
+  - qmk
   - qt5-wayland
   - qt6-wayland
+  - rar
   - reflector
   - ripgrep
-  - snapd
-  - spdlog-git
+  - seahorse
   - starship
   - stow
-  - supabase-git
   - swayidle
   - swww-git
   - sxiv-git
+  - syncthing
+  - syncthingtray
+  - tree-sitter
   - ttf-joypixels
   - unzip
   - vulkan-radeon # TODO: check if the GPU is AMD before installing
-  - waybar-git
+  - walker-bin
+  - waybar
   - wev-git
   - wget
   - wl-clipboard
-  - wlr-randr-git
-  - wofi
+  - wlsunset-git
+  - zed-git
   - zellij
+  - zip
   - zoxide
+  - zsh
+  - zsh-antidote
 root_systemd_services:
   - bluetooth
   - NetworkManager
   - docker
-  - snapd.socket
-  - snapd.apparmor
 user_systemd_services:
   - gnome-keyring-daemon
   - pipewire
   - pipewire-pulse
   - wireplumber
+  - syncthing
   - xdg-desktop-portal
   - mako

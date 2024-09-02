@@ -10,11 +10,11 @@
 - name: Check if paru is already installed
   shell: command -v paru
   register: paru_installed
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Clone paru
   git:
-    repo: 'https://aur.archlinux.org/paru.git'
+    repo: "https://aur.archlinux.org/paru.git"
     dest: "{{ src_dir }}/paru"
     update: yes
     version: master
@@ -45,7 +45,7 @@
     dest: "/etc/NetworkManager/system-connections/{{ wifi_ssid | replace(' ', '_') }}.nmconnection"
     owner: root
     group: root
-    mode: '0600'
+    mode: "0600"
   notify:
     - reload network manager
 
@@ -55,7 +55,7 @@
     state: started
     enabled: yes
   loop: "{{ root_systemd_services }}"
-  become: yes
+  become: true
 
 - name: Ensure user systemd services are running
   systemd:
@@ -65,16 +65,16 @@
     scope: user
   loop: "{{ user_systemd_services }}"
 
-- name: Install webstorm
-  community.general.snap:
-    name: webstorm
-    classic: yes
-    channel: latest/stable
+# - name: Install webstorm
+#   community.general.snap:
+#     name: webstorm
+#     classic: yes
+#     channel: latest/stable
 
-- name: Get fish path
+- name: Get zsh path
   become: false
-  local_action: command which fish
-  register: fish_path
+  local_action: command which zsh
+  register: zsh_path
   changed_when: False
 
 - name: Get the user's login shell
@@ -83,18 +83,18 @@
     key: "{{ ansible_user_id }}"
   changed_when: False
 
-- name: Check if the user's shell is fish
+- name: Check if the user's shell is zsh
   set_fact:
-    fish_is_login_shell: "{{ getent_passwd[ansible_user_id][5] == fish_path }}"
+    zsh_is_login_shell: "{{ getent_passwd[ansible_user_id][5] == zsh_path }}"
   when: getent_passwd[ansible_user_id] is defined
 
-- name: Add fish to shells
+- name: Add zsh to shells
   lineinfile:
     path: /etc/shells
-    line: "{{ fish_path.stdout }}"
+    line: "{{ zsh_path.stdout }}"
   become: true
 
-- name: Set the login shell to fish
-  shell: "chsh -s $(which fish) {{ ansible_env.USER }}"
-  when: not fish_is_login_shell
+- name: Set the login shell to zsh
+  shell: "chsh -s $(which zsh) {{ ansible_env.USER }}"
+  when: not zsh_is_login_shell
   become: true

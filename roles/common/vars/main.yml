@@ -10,18 +10,18 @@ linux_dotfiles:
 common_dotfiles:
   - alacritty
   - bin
+  - bash
   - borders
-  - fish
   - git
-  - jetbrains
   - lsd
   - nvim
   - starship
   - zellij
+  - zsh
 mise_runtimes:
   - python@3.12.2
   - ruby@3.2.3
   - node@20.4.0
-  - erlang@26.0.2
-  - elixir@1.15.2-otp-26
+  - erlang@27.0.1
+  - elixir@1.17.2-otp-27
   - bun@1.1.4

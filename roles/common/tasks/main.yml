@@ -1,20 +1,20 @@
 ---
-- name: Set fish global variables
-  shell:
-    cmd: "fish -c 'set -Ux {{ item.name }} {{ item.value }}'"
-  loop:
-    - { name: 'BAT_THEME', value: 'base16' }
-    - { name: 'EDITOR', value: "'nvim'" }
-    - { name: 'VISUAL', value: "'nvim'" }
-    - { name: 'STARSHIP_CONFIG', value: '"$HOME/.config/starship/starship.toml"' }
-    - { name: 'LANG', value: 'en_US.UTF-8' }
-    - { name: 'FZF_PREVIEW_COMMAND', value: 'bat --style=numbers --color=always {}' }
-    - { name: 'FZF_COMPLETION_TRIGGER', value: "'**'" }
-    - { name: 'FZF_DEFAULT_OPTS', value: "'--color=fg:-1,bg:-1,fg+:4,bg+:-1,header:3,hl:-1,hl+:3,prompt:4,spinner:5,pointer:5,marker:4,info:4'" }
-
+# - name: Set fish global variables
+#   shell:
+#     cmd: "fish -c 'set -Ux {{ item.name }} {{ item.value }}'"
+#   loop:
+#     - { name: 'BAT_THEME', value: 'base16' }
+#     - { name: 'EDITOR', value: "'nvim'" }
+#     - { name: 'VISUAL', value: "'nvim'" }
+#     - { name: 'STARSHIP_CONFIG', value: '"$HOME/.config/starship/starship.toml"' }
+#     - { name: 'LANG', value: 'en_US.UTF-8' }
+#     - { name: 'FZF_PREVIEW_COMMAND', value: 'bat --style=numbers --color=always {}' }
+#     - { name: 'FZF_COMPLETION_TRIGGER', value: "'**'" }
+#     - { name: 'FZF_DEFAULT_OPTS', value: "'--color=fg:-1,bg:-1,fg+:4,bg+:-1,header:3,hl:-1,hl+:3,prompt:4,spinner:5,pointer:5,marker:4,info:4'" }
+#
 - name: Clone dotfiles repo
   git:
-    repo: 'https://github.com/kcierzan/dotfiles'
+    repo: "https://github.com/kcierzan/dotfiles"
     dest: "{{ dotfiles_dir }}"
     clone: yes
     update: yes
@@ -43,3 +43,13 @@
 
 - name: Sync neovim plugins
   shell: "nvim --headless 'Lazy! sync' +qa"
+# - name: Install doom emacs
+#   git:
+#     repo: 'https://github.com/hlissner/doom-emacs'
+#     dest: "{{ ansible_env.HOME }}/.emacs.d"
+#     clone: yes
+#     update: yes
+#     version: master
+
+# - name: Install emacs packages
+#   shell: "{{ ansible_env.HOME }}/.emacs.d/bin/doom sync"
